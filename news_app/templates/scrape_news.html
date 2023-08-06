@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MarketWatcher</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    {% load static %}
+    <link rel="shortcut icon" type="image/png" href="{% static '/images/favicon.png' %}" >
+
+    {% load static %}
+    <link rel="stylesheet" type="text/css" href="{% static '/css/styles.css' %}">
+    <script src="https://cdn.lordicon.com/bhenfmcm.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js"></script>
+
+<style>
+    .fixed-sidebar {
+        position: sticky;
+        top: 0;
+        height: calc(100vh - 56px); 
+        overflow-y: auto;
+    }
+    @import url('https://fonts.googleapis.com/css2?family=Bagel+Fat+One&family=Lilita+One&family=Roboto+Condensed&display=swap');
+
+    body {
+        
+        cursor: url("/static/images/cursor.png"), auto;
+        display: grid;
+        grid-template-rows: auto 1fr auto; 
+        grid-template-areas: "header" "main" ; 
+        overflow-x: hidden;
+        background: #F5F7FA;
+        min-height: 100vh;
+        font-family: 'Open Sans', sans-serif;
+    }
+    .tagline{
+        color:white;
+        font-family: 'Bagel Fat One', cursive;
+    }
+    
+    .button1 {
+        background-color: #4CAF50; 
+        border: none;
+        color: white;
+        padding: 16px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 4px 2px;
+        transition-duration: 0.4s;
+        cursor: pointer;
+        background-color: white; 
+        color: black; 
+        border: 2px solid #008CBA;
+        border-radius: 12px;
+      }
+      .button1:hover {
+        background-color: #008CBA;
+        color: white;
+      }
+     /* Primary Button */
+    .custom-btn {
+        background-color: #c797eb;
+        color: #ffffff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+      }
+      
+      .custom-btn:hover {
+        background-color: #6d59b5;
+      }
+    /* Secondary Button */
+    .secondary-btn {
+        background-color: #af70e1;
+        color: #ffffff;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 4px;
+        cursor: pointer;
+      }
+      
+      .secondary-btn:hover {
+        opacity: 0.8;
+      }
+        
+      
+      .sidebar {
+        background-color: #f8f9fa;
+        padding: 20px;
+    }
+    
+    .company-link{
+        font-family: 'Roboto Condensed', sans-serif;
+        font-size: x-large;
+    }
+    
+    .sentiment .form-check {
+        display: inline-block;
+        margin-right: 10px;
+        margin-top:10px;
+        margin-bottom: 20px;
+      }
+    
+      
+    .article-image {
+        max-width: 100%; /* Ensure the image does not exceed its container */
+        height: auto; /* Maintain the image's aspect ratio */
+        display: block; /* Remove any default spacing or alignment */
+        margin-top: 10px; /* Adjust the top margin as needed */
+        margin-bottom: 10px; /* Adjust the bottom margin as needed */
+      }
+      
+      .footer {
+        text-align:center;
+        background-color:#c797eb ;
+        color:white;
+        justify-content:center;  
+        padding:3em;
+      }
+      
+      .headings{
+        color: #af70e1;
+        font-family: 'Lilita One', cursive;
+      }
+</style>
+
+</head>
+<body>
+    {% load custom_filters %}
+
+    <nav class="navbar navbar-dark bg-dark" id="top">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="#">
+                {% load static %}
+                <img src="{% static '/images/logonews.jpg' %}" alt="Logo" width="250" height="50" class="d-inline-block align-text-top"> 
+            </a>
+           <div class="tagline"> 
+            <h3>Stay Updated, Stay Ahead! </h3>
+          </div>
+          <form action="{% url 'search_company' %}" method="get">
+            <input type="text" name="company_name" placeholder="Enter company name" required>
+            <button type="submit">Search</button>
+        </form>
+        
+          <div class="ani-icon">
+            <lord-icon
+                src="https://cdn.lordicon.com/gqzfzudq.json"
+                trigger="loop"
+                delay="2500"
+                colors="primary:#c69cf4,secondary:#8930e8"
+                style="width:70px;height:70px">
+            </lord-icon>
+        </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-4 fixed-sidebar fixed-left position-sticky">
+                <h2 class="headings">TOP COMPANIES</h2>
+                <ul class="list-group">
+                    {% for company in company_list %}
+                        <li class="list-group-item">
+                            <a class="company-link " href="#{{ company|slugify }}" >{{ company }}</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+                <h2 class="headings">
+                    <a  href="#comparative-overview">A Comparative Overview</a>
+                </h2>
+
+            </div>
+
+            <!-- Articles -->
+            <div class="col-md-8">
+                 <!-- Sentiment Filter -->
+            <div class="sentiment">
+                <form id="sentiment-filter-form">
+                    <div class="form-check">
+                        <input class="form-check-input sentiment-filter" type="checkbox" value="Positive" id="positive-checkbox">
+                        <label class="form-check-label" for="positive-checkbox">
+                            Positive
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input sentiment-filter" type="checkbox" value="Negative" id="negative-checkbox">
+                        <label class="form-check-label" for="negative-checkbox">
+                            Negative
+                        </label>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input sentiment-filter" type="checkbox" value="Neutral" id="neutral-checkbox">
+                        <label class="form-check-label" for="neutral-checkbox">
+                            Neutral
+                        </label>
+                    </div>
+                </form>
+            </div>
+
+                {% for company in company_list %}
+                    <h2 id="{{ company|slugify }}" class="headings">{{ company }}</h2>
+                    <canvas id="chart-{{ forloop.counter }}"></canvas>
+                    {% for news in news_list %}
+                        {% if news.Company == company %}
+                            <div class="card company-card">
+                                <div class="card-body">
+                                    <h5 class="card-title">{{ news.Title }}</h5>
+                                    <img src="{{ news.Image }}" alt="Article Image" class="article-image">
+                                    <br>
+                                    <a href="{{ news.Link }}" target="_blank" class="custom-btn " type="button"> Dive Deeper &#9654;</a>
+                                    <a href="#summary{{ forloop.counter }}" class="secondary-btn" style="" data-toggle="collapse" data-target="#summary{{ forloop.counter }}" aria-expanded="false" aria-controls="summary{{ forloop.counter }}">Explore Summary</a>
+                                    <a href="#sentiment{{ forloop.counter }}" class="secondary-btn" data-toggle="collapse" data-target="#sentiment{{ forloop.counter }}" aria-expanded="false" aria-controls="sentiment{{ forloop.counter }}">Sentiment Insights</a>
+                                    <br><br>
+                                    <div class="collapse" id="summary{{ forloop.counter }}">
+                                        <div class="card card-body">
+                                            <strong>Summary:</strong> {{ news.summary }}
+                                        </div>
+                                    </div>
+                                    <div class="collapse" id="sentiment{{ forloop.counter }}">
+                                        <div class="card card-body">
+                                            <strong>Sentiment:</strong> <span class="sentiment">{{ news.sentiment }}</span>
+                                        </div>
+                                    </div>
+                                    <p>Published at: {{ news.Published_At }}</p>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                    <a href="#top">Back to top of the page &uarr;
+                    </a>
+                {% endfor %}
+                <br>
+                <div id="comparative-overview">
+                    <h2 class="headings">A Comparative Overview</h2>
+                    <canvas id="all-companies-chart"></canvas>
+              </div>
+            </div>
+           
+
+        </div>
+      
+
+        <div class="footer">Copyright &copy; 2023 Market Watcher. All Rights Reserved.
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.1/dist/umd/popper.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            console.log('Page loaded at:', new Date().toLocaleTimeString());
+            {% for company in company_list %}
+                var sentimentData{{ forloop.counter }} = {
+                    'Positive': 0,
+                    'Negative': 0,
+                    'Neutral': 0
+                };
+    
+                {% for news in news_list %}
+                    {% if news.Company == company %}
+                        {% if news.sentiment == 'Positive' %}
+                            sentimentData{{ forloop.parentloop.counter }}['Positive']++;
+                        {% elif news.sentiment == 'Negative' %}
+                            sentimentData{{ forloop.parentloop.counter }}['Negative']++;
+                        {% elif news.sentiment == 'Neutral' %}
+                            sentimentData{{ forloop.parentloop.counter }}['Neutral']++;
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+    
+                var chartData{{ forloop.counter }} = {
+                    labels: Object.keys(sentimentData{{ forloop.counter }}),
+                    datasets: [{
+                        data: Object.values(sentimentData{{ forloop.counter }}),
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.5)',
+                            'rgba(255, 99, 132, 0.5)',
+                            'rgba(255, 205, 86, 0.5)',
+                        ],
+                        borderColor: [
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(255, 205, 86, 1)',
+                        ],
+                        borderWidth: 1
+                    }]
+                };
+    
+                var ctx{{ forloop.counter }} = document.getElementById('chart-{{ forloop.counter }}').getContext('2d');
+                new Chart(ctx{{ forloop.counter }}, {
+                    type: 'pie',
+                    data: chartData{{ forloop.counter }},
+                    options: {
+                        responsive: true,
+                        legend: {
+                            position: 'bottom',
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Sentiment Distribution'
+                            }
+                        }
+                    }
+                });
+            {% endfor %}
+        });
+    
+        $(document).ready(function() {
+            // Sentiment Filter
+            $('.sentiment-filter').change(function() {
+                var selectedSentiments = [];
+                $('.sentiment-filter:checked').each(function() {
+                    selectedSentiments.push($(this).val());
+                });
+    
+                if (selectedSentiments.length > 0) {
+                    $('.company-card').hide();
+                    for (var i = 0; i < selectedSentiments.length; i++) {
+                        var sentiment = selectedSentiments[i];
+                        $('.company-card').filter(function() {
+                            return $(this).find('.sentiment').text().trim() === sentiment;
+                        }).show();
+                    }
+                } else {
+                    $('.company-card').show();
+                }
+            });
+        });
+
+       
+        
+
+        $(document).ready(function() {
+            var sentimentData = {};
+            
+            {% for company in company_list %}
+                sentimentData['{{ company }}'] = {
+                    'Positive': 0,
+                    'Negative': 0,
+                    'Neutral': 0
+                };
+        
+                {% for news in news_list %}
+                    {% if news.Company == company %}
+                        {% if news.sentiment == 'Positive' %}
+                            sentimentData['{{ company }}']['Positive']++;
+                        {% elif news.sentiment == 'Negative' %}
+                            sentimentData['{{ company }}']['Negative']++;
+                        {% elif news.sentiment == 'Neutral' %}
+                            sentimentData['{{ company }}']['Neutral']++;
+                        {% endif %}
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+        
+            var companies = Object.keys(sentimentData);
+            
+            var chartData = {
+                labels: companies,
+                datasets: [
+                    {
+                        label: 'Positive',
+                        data: companies.map(function(company) {
+                            return sentimentData[company]['Positive'];
+                        }),
+                        backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Negative',
+                        data: companies.map(function(company) {
+                            return sentimentData[company]['Negative'];
+                        }),
+                        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Neutral',
+                        data: companies.map(function(company) {
+                            return sentimentData[company]['Neutral'];
+                        }),
+                        backgroundColor: 'rgba(255, 205, 86, 0.5)',
+                        borderColor: 'rgba(255, 205, 86, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            };
+        
+            var ctx = document.getElementById('all-companies-chart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    legend: {
+                        position: 'bottom',
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Sentiment Comparison for All Companies'
+                        }
+                    },
+                    scales: {
+                        x: {
+                            stacked: true,
+                        },
+                        y: {
+                            stacked: true,
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        });
+        
+        
+    </script>
+    
+    
+</body>
+</html>
+
